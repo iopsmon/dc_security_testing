@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Linux Pen Test Commands iOpsmon </title>
+  <style>
+    :root{
+      --bg:#071023; --card:#0b1220; --muted:#94a3b8; --accent:#f97316;
+      --panel:#07121a; --code-bg:#081422; --maxw:1100px; --mono:Menlo,Consolas,monospace;
+    }
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#071023 0%, #071827 100%);color:#e6eef6}
+    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px}
+    .layout{display:grid;grid-template-columns:260px 1fr;gap:18px}
+    nav{background:var(--card);border-radius:10px;padding:14px;height:calc(100vh - 140px);overflow:auto}
+    .toc a{display:block;padding:8px 10px;border-radius:6px;color:#cfe8dd;text-decoration:none;margin-bottom:6px}
+    .toc a:hover{background:rgba(255,255,255,0.03)}
+    main{min-height:80vh}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:16px;border-radius:10px;margin-bottom:16px}
+    .card h2{margin:0 0 8px 0;color:#fff;font-size:16px}
+    .lead{color:var(--muted);margin:0 0 12px 0;font-size:13px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .mini{flex:1 1 320px;background:var(--panel);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+    pre.code{background:var(--code-bg);padding:12px;border-radius:8px;overflow:auto;border:1px solid rgba(255,255,255,0.03);font-family:var(--mono);font-size:13px;line-height:1.5;color:#dbeafe}
+    .code-toolbar{display:flex;justify-content:flex-end;margin-bottom:6px;gap:8px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px}
+    .btn:hover{color:#fff;border-color:rgba(255,255,255,0.08)}
+    footer{margin-top:12px;color:var(--muted);font-size:12px}
+    @media(max-width:900px){ .layout{grid-template-columns:1fr} nav{height:auto} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div>
+        <h1 style="margin:0;font-size:18px">Pen Test Linux Commands </h1>
+        <div class="lead">Add non-destructive checks here. Keep notes and usage per command.</div>
+      </div>
+      <div style="margin-left:auto;color:var(--muted)">Use only on authorized systems</div>
+    </header>
+
+    <div class="layout">
+      <nav>
+        <h3 style="margin-top:0;color:var(--accent)">Contents</h3>
+        <div class="toc">
+          <a href="#ssh">SSH / Remote Access</a>
+          <a href="#ports">Open Ports & Services</a>
+          <a href="#users">Users & Authentication</a>
+          <a href="#priv">Privilege Escalation</a>
+          <a href="#suid">SUID & Permissions</a>
+          <a href="#cron">Scheduled Tasks & Persistence</a>
+          <a href="#net">Network Capture & Traffic</a>
+          <a href="#logs">Logs & Audit</a>
+          <a href="#packages">Packages & Patch Level</a>
+          <a href="#web">Web Apps & Services</a>
+          <a href="#custom">Add Your Commands</a>
+          <a href="#splunk_lookup">Splunk Lookups</a>
+        </div>
+      </nav>
+
+      <main>
+        <!-- Section template: copy block and replace content -->
+        <section id="ssh" class="card">
+          <h2>SSH / Remote Access</h2>
+          <p class="lead">Commands to inspect SSH configuration and keys.</p>
+          <div class="code-toolbar">
+            <button class="btn" data-copy-target="#cmd-ssh">Copy</button>
+            <button class="btn" onclick="toggle('#cmd-ssh')">Toggle</button>
+          </div>
+          <pre id="cmd-ssh" class="code" contenteditable="true">
+# Example SSH checks (edit and add your own)
+ss -ltnp | grep :22
+sudo grep -i '^PermitRootLogin\|^PasswordAuthentication' /etc/ssh/sshd_config
+sudo find /home /root -name authorized_keys -exec ls -l {} \;
+          </pre>
+        </section>
+
+        <section id="ports" class="card">
+          <h2>Open Ports & Services</h2>
+          <p class="lead">Inspect listening services and perform local scans.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-ports">Copy</button></div>
+          <pre id="cmd-ports" class="code" contenteditable="true">
+# Listening sockets and processes
+sudo ss -lptn
+# Local port scan (tune flags per environment)
+sudo nmap -sT -Pn -p- --min-rate=500 127.0.0.1
+          </pre>
+        </section>
+
+        <section id="users" class="card">
+          <h2>Users & Authentication</h2>
+          <p class="lead">User accounts, lastlogins, and auth failures.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-users">Copy</button></div>
+          <pre id="cmd-users" class="code" contenteditable="true">
+# List users and shells
+cut -d: -f1,3,6,7 /etc/passwd
+lastlog -t 90
+sudo faillog -a
+          </pre>
+        </section>
+
+        <section id="priv" class="card">
+          <h2>Privilege Escalation Checks</h2>
+          <p class="lead">Sudo rights and common privilege escalation indicators.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-priv">Copy</button></div>
+          <pre id="cmd-priv" class="code" contenteditable="true">
+# Sudo rights for current user
+sudo -l
+
+# Search for potential escalation paths (SUID/known exploits)
+sudo find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -ls 2>/dev/null | head -n 80
+          </pre>
+        </section>
+
+        <section id="suid" class="card">
+          <h2>SUID / File Permissions</h2>
+          <p class="lead">World-writable files, sensitive config locations.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-suid">Copy</button></div>
+          <pre id="cmd-suid" class="code" contenteditable="true">
+# World-writable directories/files
+sudo find / -xdev -type d -perm -0002 -print 2>/dev/null
+sudo find / -xdev -type f -perm -0002 -print 2>/dev/null
+          </pre>
+        </section>
+
+        <section id="cron" class="card">
+          <h2>Scheduled Tasks & Persistence</h2>
+          <p class="lead">Inspect cron, systemd units and user crontabs.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-cron">Copy</button></div>
+          <pre id="cmd-cron" class="code" contenteditable="true">
+# System crontab and user crons
+sudo cat /etc/crontab /etc/cron.*/* 2>/dev/null
+for u in $(cut -f1 -d: /etc/passwd); do crontab -u $u -l 2>/dev/null; done
+          </pre>
+        </section>
+
+        <section id="net" class="card">
+          <h2>Network Capture & Traffic</h2>
+          <p class="lead">Short packet captures and connection inspection.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-net">Copy</button></div>
+          <pre id="cmd-net" class="code" contenteditable="true">
+# Capture 500 packets
+sudo tcpdump -i any -c 500 -w /tmp/sample.pcap
+# Active connections
+sudo ss -tunap
+          </pre>
+        </section>
+
+        <section id="logs" class="card">
+          <h2>Logs & Audit</h2>
+          <p class="lead">Search auth logs, sudo and auditd entries.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-logs">Copy</button></div>
+          <pre id="cmd-logs" class="code" contenteditable="true">
+# Recent auth failures
+sudo journalctl -u sshd --since "24 hours ago" | grep -i failed
+# Sudo logs
+sudo journalctl _COMM=sudo --since "7 days ago" | tail -n 200
+          </pre>
+        </section>
+
+        <section id="packages" class="card">
+          <h2>Packages & Patch Level</h2>
+          <p class="lead">Distro info and package listings.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-packages">Copy</button></div>
+          <pre id="cmd-packages" class="code" contenteditable="true">
+uname -a
+cat /etc/os-release
+
+# Debian/Ubuntu
+dpkg -l | head -n 40
+# RHEL/CentOS
+rpm -qa | head -n 40
+          </pre>
+        </section>
+
+        <section id="web" class="card">
+          <h2>Web Apps & Services</h2>
+          <p class="lead">Probe local web services and common config files.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-web">Copy</button></div>
+          <pre id="cmd-web" class="code" contenteditable="true">
+curl -IsS http://localhost:80 | head -n 20
+nikto -host http://localhost || true
+sudo find /var/www -maxdepth 3 -type f -iname "*.env" -o -iname "wp-config.php" 2>/dev/null
+          </pre>
+        </section>
+
+        <section id="custom" class="card">
+          <h2>Add Your Commands</h2>
+          <p class="lead">Free area to paste and document your custom checks.</p>
+          <div class="code-toolbar"><button class="btn" data-copy-target="#cmd-custom">Copy</button></div>
+          <pre id="cmd-custom" class="code" contenteditable="true">
+# Paste your custom pen test commands here
+          </pre>
+        </section>
+ <!-- New section: CSV lookup of pen-test commands for Splunk monitoring -->
+  <section id="splunk_lookup" class="card">
+    <h2>CSV Lookup / Monitoring Export Spunk</h2>
+    <p class="lead">Download or copy a CSV lookup of the pen-test checks for ingestion into Splunk lookups or monitoring dashboards.</p>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <button class="btn" id="copyCsvBtn">Copy CSV</button>
+      <a class="btn" id="downloadCsv" download="pentest_checks_lookup.csv">Download CSV</a>
+      <div style="margin-left:auto;color:var(--muted);font-size:13px">Use as a local lookup or | inputlookup in Splunk</div>
+    </div>
+
+    <div style="overflow:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.03);padding:10px;background:var(--panel)">
+      <table class="ref" id="csvPreview" style="width:100%;white-space:pre-wrap;">
+        <thead><tr><th>id</th><th>category</th><th>command</th><th>description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>ssh</td><td>ss -ltnp | grep :22</td><td>SSH listening sockets and process</td></tr>
+          <tr><td>2</td><td>ports</td><td>sudo ss -lptn</td><td>Listening TCP ports with owning process</td></tr>
+          <tr><td>3</td><td>users</td><td>cut -d: -f1,3,6,7 /etc/passwd</td><td>List local users and shells</td></tr>
+          <tr><td>4</td><td>priv</td><td>sudo -l</td><td>Check sudo rights for current user</td></tr>
+          <tr><td>5</td><td>suid</td><td>sudo find / -xdev -type f \\( -perm -4000 -o -perm -2000 \\) -ls</td><td>Find SUID/SGID binaries</td></tr>
+          <tr><td>6</td><td>cron</td><td>sudo cat /etc/crontab /etc/cron.*/*</td><td>Inspect system cron jobs</td></tr>
+          <tr><td>7</td><td>net</td><td>sudo tcpdump -i any -c 500 -w /tmp/sample.pcap</td><td>Short packet capture</td></tr>
+          <tr><td>8</td><td>logs</td><td>sudo journalctl -u sshd --since "24 hours ago" | grep -i failed</td><td>Recent SSH auth failures</td></tr>
+          <tr><td>9</td><td>packages</td><td>uname -a</td><td>Kernel and distro information</td></tr>
+          <tr><td>10</td><td>web</td><td>curl -IsS http://localhost:80 | head -n 20</td><td>Probe local web service</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:10px;color:var(--muted);font-size:13px">
+      Tip: use the downloaded CSV as a lookup in Splunk (Settings → Lookups → Add lookup table file) and reference via | inputlookup pentest_checks_lookup.csv
+    </div>
+  </section>
+
+  <script>
+    // CSV rows mirror the table above
+    (function(){
+      const rows = [
+        ['id','category','command','description'],
+        ['1','ssh','ss -ltnp | grep :22','SSH listening sockets and process'],
+        ['2','ports','sudo ss -lptn','Listening TCP ports with owning process'],
+        ['3','users','cut -d: -f1,3,6,7 /etc/passwd','List local users and shells'],
+        ['4','priv','sudo -l','Check sudo rights for current user'],
+        ['5','suid','sudo find / -xdev -type f ( -perm -4000 -o -perm -2000 ) -ls','Find SUID/SGID binaries'],
+        ['6','cron','sudo cat /etc/crontab /etc/cron.*/*','Inspect system cron jobs'],
+        ['7','net','sudo tcpdump -i any -c 500 -w /tmp/sample.pcap','Short packet capture'],
+        ['8','logs','sudo journalctl -u sshd --since "24 hours ago" | grep -i failed','Recent SSH auth failures'],
+        ['9','packages','uname -a','Kernel and distro information'],
+        ['10','web','curl -IsS http://localhost:80 | head -n 20','Probe local web service']
+      ];
+
+      function toCsv(arr){
+        return arr.map(r => r.map(field => {
+          // escape quotes and wrap fields containing commas/newlines/quotes
+          const f = String(field).replace(/"/g, '""');
+          return /[,"\n]/.test(f) ? `"${f}"` : f;
+        }).join(',')).join('\n');
+      }
+
+      const csv = toCsv(rows);
+      const downloadLink = document.getElementById('downloadCsv');
+      downloadLink.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+
+      document.getElementById('copyCsvBtn').addEventListener('click', async ()=>{
+        try {
+          await navigator.clipboard.writeText(csv);
+          const btn = document.getElementById('copyCsvBtn');
+          const old = btn.textContent;
+          btn.textContent = 'Copied';
+          setTimeout(()=> btn.textContent = old, 1200);
+        } catch(e){
+          alert('Copy failed. Select and copy manually from the preview table.');
+        }
+      });
+    })();
+  </script>
+
+        <footer>
+          <div>Generated: <strong id="genTime"></strong></div>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+
+ 
+
+
+
+
+
+  <script>
+    document.getElementById('genTime').textContent = new Date().toLocaleString();
+    document.querySelectorAll('button[data-copy-target]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const sel = document.querySelector(btn.dataset.copyTarget);
+        if(!sel) return;
+        const text = sel.innerText.trim();
+        try {
+          await navigator.clipboard.writeText(text);
+          const old = btn.textContent;
+          btn.textContent = 'Copied';
+          setTimeout(()=> btn.textContent = old, 1200);
+        } catch(e){
+          alert('Copy failed. Select and copy manually.');
+        }
+      });
+    });
+    function toggle(id){
+      const el = document.querySelector(id);
+      if(!el) return;
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+    window.toggle = toggle;
+  </script>
+</body>
+</html>
